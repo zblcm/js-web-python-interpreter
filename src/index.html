@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<html>
+<head><title>Touch Test</title></head>
+<body>
+</body>
+<!-- Codemirror from https://codemirror.net/ -->
+<script src="codemirror/codemirror.js"></script>
+<link rel="stylesheet" href="codemirror/codemirror.css">
+
+<!-- Constants used by the whole program. -->
+<script src="./const.js" type="text/javascript"></script>
+
+<!-- Build from Jison https://zaa.ch/jison/ -->
+<script src="./python.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+let Python = {};
+Python.parser = python_parse_raw;
+</script>
+
+<script src="./error.js" type="text/javascript"></script>
+<script src="./lexer.js" type="text/javascript"></script>
+<script src="./travel.js" type="text/javascript"></script>
+<script type="text/javascript">
+let PYTHON_STATE = {};
+PYTHON_STATE.PREPARE = 0;
+PYTHON_STATE.RUNNING = 1;
+PYTHON_STATE.READY = 2;
+let BUTTON_COLOR = {};
+BUTTON_COLOR[PYTHON_STATE.PREPARE] = "#ff99cc";
+BUTTON_COLOR[PYTHON_STATE.RUNNING] = "#ffcc99";
+BUTTON_COLOR[PYTHON_STATE.READY]   = "#99ccff";
+let python_state;
+
+let code_element;
+let code_area = CodeMirror(function(elt) {
+    document.body.appendChild(elt);
+    code_element = elt;
+
+    code_element.style.position = "absolute";
+    // code_element.style.resize = "none";
+    // code_element.style.border = "0px";
+}, {
+    value:          "print(\"tinynight python!\")",
+    mode:           "python",
+    indentUnit:     4,
+    lineNumbers:    true
+});
+
+let console_area = document.createElement("textarea");
+document.body.appendChild(console_area);
+console_area.style.position = "absolute";
+console_area.style.resize = "none";
+console_area.style.border = "0px";
+console_area.disabled = true;
+
+let canvas_area = document.createElement("canvas");
+document.body.appendChild(canvas_area);
+canvas_area.style.position = "absolute";
+
+let append_log = function(text, next_line) {
+	console_area.value = console_area.value + text;
+	if (next_line) console_area.value = console_area.value + "\n";
+};
+let clear_log = function() {
+	console_area.value = "";
+};
+
+let run_button = document.createElement("div");
+document.body.appendChild(run_button);
+run_button.style.position = "absolute";
+run_button.onclick = function() {
+    switch (python_state) {
+        case PYTHON_STATE.READY: {
+            clear_log();
+            update_python_state(PYTHON_STATE.RUNNING);
+            let ast = null;
+            try {
+                ast = {
+                    type: NODE.STATEMENT.BLOCK,
+                    body: Python.parser.parse(code_area.getValue()),
+                };
+            }
+            catch (error) {
+                Python.parse_error(error);
+            }
+            if (ast)
+                Traveler.process(ast, function() {
+                    update_python_state(PYTHON_STATE.READY);
+                    console.log("done!");
+                });
+            break;
+        }
+        case PYTHON_STATE.RUNNING: {
+            Traveler.rejected = true;
+            break;
+        }
+    }
+};
+
+let update_python_state = function(state) {
+	python_state = state;
+	run_button.style["background-color"] = BUTTON_COLOR[state];
+};
+update_python_state(PYTHON_STATE.READY);
+clear_log();
+
+// Window size.
+let HEADER_SIZE = 20;
+let MARGIN_SIZE = 10;
+
+let on_resize = function() {
+	let screen_x = document.documentElement.clientWidth;
+	let screen_y = document.documentElement.clientHeight;
+	
+	code_element.style.left = MARGIN_SIZE + "px";
+    code_element.style.top = HEADER_SIZE + MARGIN_SIZE + "px";
+    let code_size_x = ((screen_x - (3 * MARGIN_SIZE)) / 2);
+    let code_size_y = (screen_y - HEADER_SIZE - (2 * MARGIN_SIZE));
+    code_area.setSize(code_size_x, code_size_y);
+
+	console_area.style.left = (((screen_x - (3 * MARGIN_SIZE)) / 2) + (2 * MARGIN_SIZE)) + "px";
+	console_area.style.top = HEADER_SIZE + MARGIN_SIZE + "px";
+	console_area.style.width = ((screen_x - (3 * MARGIN_SIZE)) / 2) + "px";
+	console_area.style.height = ((screen_y - HEADER_SIZE - (3 * MARGIN_SIZE)) / 2) + "px";
+	
+	canvas_area.style.left = (((screen_x - (3 * MARGIN_SIZE)) / 2) + (2 * MARGIN_SIZE)) + "px";
+	canvas_area.style.top = (HEADER_SIZE + ((screen_y - HEADER_SIZE - (3 * MARGIN_SIZE)) / 2) + (MARGIN_SIZE * 2)) + "px";
+	canvas_area.width = ((screen_x - (3 * MARGIN_SIZE)) / 2);
+	canvas_area.height = ((screen_y - HEADER_SIZE - (3 * MARGIN_SIZE)) / 2);
+	
+	run_button.style.left = "0px";
+	run_button.style.top = "0px";
+	run_button.style.width = HEADER_SIZE + "px";
+	run_button.style.height = HEADER_SIZE + "px";
+};
+window.onresize = on_resize;
+on_resize();
+
+</script>
+</html>

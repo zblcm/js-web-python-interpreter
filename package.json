@@ -1,0 +1,19 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node ./grammar/build.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "codemirror": "^5.48.4",
+    "jison": "^0.4.18"
+  },
+  "devDependencies": {
+    "webpack-cli": "^3.3.6"
+  }
+}
